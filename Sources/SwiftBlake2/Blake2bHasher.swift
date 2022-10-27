@@ -2,13 +2,23 @@ import Foundation
 import Cblake2
 
 public struct Blake2bHasher {
-    static func hash(data:Data, length:size_t) throws -> Data {
-        var newHasher = Blake2bHasher(outputLength:length)
+    public static func hash(data:Data, length:size_t) throws -> Data {
+        var newHasher = try Blake2bHasher(outputLength:length)
         try newHasher.update(data:data)
-        return newHasher.export()
+        return try newHasher.export()
     }
-    enum Error:Swift.Error {
-        case blake2bError
+    
+    fileprivate static func validateOutputLength(_ olen:size_t) throws {
+    	guard olen > 0 && olen <= 64 else {
+    		throw Blake2bError.invalidOutputLength
+    	}
+    }
+    
+    public enum Blake2bError:Swift.Error {
+    	case invalidOutputLength
+        case initializationError
+        case updateError
+        case exportError
     }
 
     fileprivate var state = blake2b_state()
@@ -16,9 +26,10 @@ public struct Blake2bHasher {
     let outputLength:size_t
 
     /// Initialize a new blake2s hasher
-    public init(outputLength:size_t) {
+    public init(outputLength:size_t) throws {
+    	try Self.validateOutputLength(outputLength)
         guard blake2b_init(&state, outputLength) == 0 else {
-            fatalError("error initializing blake2s")
+            throw Blake2bError.initializationError
         }
         self.outputLength = outputLength
     }
@@ -32,25 +43,25 @@ public struct Blake2bHasher {
     /// Update the hasher with new data
     public mutating func update(_ input:UnsafeRawBufferPointer) throws {
         guard blake2b_update(&state, UnsafeRawPointer(input.baseAddress!), input.count) == 0 else {
-            throw Error.blake2bError
+            throw Blake2bError.updateError
         }
     }
 
     /// Finish the hashing
-    public mutating func export() -> Data {
+    public mutating func export() throws -> Data {
         let finalHash = UnsafeMutableBufferPointer<UInt8>.allocate(capacity:outputLength)
         defer {
             finalHash.deallocate()
         }
         guard blake2b_final(&state, finalHash.baseAddress!, outputLength) == 0 else {
-            fatalError("error finalizing blake2s")
+            throw Blake2bError.updateError
         }
         return Data(buffer:finalHash)
     }
     
     mutating func reset() throws {
         guard blake2b_init(&state, outputLength) == 0 else {
-            throw Error.blake2bError
+            throw Blake2bError.updateError
         }
     }
 }
