@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "cblake2",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tannerdsilva/Cblake2.git",
+      "state" : {
+        "revision" : "621fdb53d819a84cb84cc289bba768f3b5c526f6",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 2
+}
