@@ -2,11 +2,12 @@ import Foundation
 import Cblake2
 
 public struct Blake2bHasher {
-    public static func hash(data:Data, length:size_t) throws -> Data {
-        var newHasher = try Blake2bHasher(outputLength:length)
-        try newHasher.update(data:data)
-        return try newHasher.export()
-    }
+	/// Hash data and return the results with a single function call.
+	public static func hash<B>(_ bytes:B, outputLength length:size_t) throws -> Data where B:ContiguousBytes {
+		var newHasher = try Blake2bHasher(outputLength:length)
+		try newHasher.update(bytes)
+		return try newHasher.export()
+	}
     
     fileprivate static func validateOutputLength(_ olen:size_t) throws {
     	guard olen > 0 && olen <= 64 else {
@@ -23,9 +24,9 @@ public struct Blake2bHasher {
 
     fileprivate var state = blake2b_state()
     
-    let outputLength:size_t
+    public let outputLength:size_t
 
-    /// Initialize a new blake2s hasher
+    /// Initialize a new blake2b hasher
     public init(outputLength:size_t) throws {
     	try Self.validateOutputLength(outputLength)
         guard blake2b_init(&state, outputLength) == 0 else {
@@ -34,16 +35,12 @@ public struct Blake2bHasher {
         self.outputLength = outputLength
     }
     
-    public mutating func update(data input:Data) throws {
-        try input.withUnsafeBytes { unsafeBuffer in
-            try self.update(unsafeBuffer)
-        }
-    }
-    
     /// Update the hasher with new data
-    public mutating func update(_ input:UnsafeRawBufferPointer) throws {
-        guard blake2b_update(&state, UnsafeRawPointer(input.baseAddress!), input.count) == 0 else {
-            throw Blake2bError.updateError
+    public mutating func update<B>(_ input:B) throws where B:ContiguousBytes {
+        try input.withUnsafeBytes { unsafeBuffer in
+           	guard blake2b_update(&state, UnsafeRawPointer(unsafeBuffer.baseAddress!), unsafeBuffer.count) == 0 else {
+           		throw Blake2bError.updateError
+           	}
         }
     }
 
