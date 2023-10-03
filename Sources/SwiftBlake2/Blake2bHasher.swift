@@ -5,7 +5,7 @@ public struct Blake2bHasher {
 	/// Hash data and return the results with a single function call.
 	public static func hash<C>(_ bytes:C, outputLength length:size_t) throws -> Data where C:Collection, C.Element == UInt8 {
 		var newHasher = try Blake2bHasher(outputLength:length)
-		try newHasher.update(bytes:bytes)
+		try newHasher.update(bytes)
 		return try newHasher.export()
 	}
 	
@@ -36,7 +36,7 @@ public struct Blake2bHasher {
 	}
 		
 	/// Update the hasher with new data
-	public mutating func update<C>(bytes input:C) throws where C:Collection, C.Element == UInt8 {
+	public mutating func update<C>(_ input:C) throws where C:Collection, C.Element == UInt8 {
 		if input.count > 0 {
 			if let getThing = try input.withContiguousStorageIfAvailable({ someBytes in
 				let baseaddr = UnsafeRawPointer(someBytes.baseAddress!)
