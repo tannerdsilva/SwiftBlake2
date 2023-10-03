@@ -34,14 +34,24 @@ public struct Blake2bHasher {
         }
         self.outputLength = outputLength
     }
-    
+        
     /// Update the hasher with new data
-    public mutating func update<B>(_ input:B) throws where B:ContiguousBytes {
-        try input.withUnsafeBytes { unsafeBuffer in
-           	guard blake2b_update(&state, UnsafeRawPointer(unsafeBuffer.baseAddress!), unsafeBuffer.count) == 0 else {
-           		throw Blake2bError.updateError
-           	}
-        }
+    public mutating func update<C>(bytes input:C) throws where C:Collection, C.Element == UInt8 {
+       	if let getThing = try input.withContiguousStorageIfAvailable({ someBytes in
+       		let baseaddr = UnsafeRawPointer(someBytes.baseAddress!)
+			guard blake2b_update(&state, baseaddr, input.count) == 0 else {
+				throw Blake2bError.updateError
+			}
+       	}) {
+       		return getThing
+       	} else {
+			let buffer = UnsafeMutableBufferPointer<UInt8>.allocate(capacity: input.count)
+			defer { buffer.deallocate() }
+			_ = buffer.initialize(from: input)
+			guard blake2b_update(&state, UnsafeRawPointer(buffer.baseAddress!), input.count) == 0 else {
+				throw Blake2bError.updateError
+			}
+		}
     }
 
     /// Finish the hashing
