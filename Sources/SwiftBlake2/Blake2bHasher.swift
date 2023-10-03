@@ -3,9 +3,9 @@ import Cblake2
 
 public struct Blake2bHasher {
 	/// Hash data and return the results with a single function call.
-	public static func hash<B>(_ bytes:B, outputLength length:size_t) throws -> Data where B:ContiguousBytes {
+	public static func hash<C>(_ bytes:C, outputLength length:size_t) throws -> Data where C:Collection, C.Element == UInt8 {
 		var newHasher = try Blake2bHasher(outputLength:length)
-		try newHasher.update(bytes)
+		try newHasher.update(bytes:bytes)
 		return try newHasher.export()
 	}
     
